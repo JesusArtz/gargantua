@@ -63,20 +63,21 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 430");
-
     Camera camera(glm::vec3(0.0f, 4.5f, 13.0f), -90.0f, -18.0f, 45.0f, (float)initialW/initialH);
     camera.lookAt(glm::vec3(0,0,0));
     gCameraPtr = &camera;
     InputState inputState;
     Input::init(window, camera, inputState);
     Input::mouseCaptured = false;
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsDark();
+    // true = instala callbacks y encadena los previos de Input (previene que las barras no respondan)
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 430");
 
     BlackHoleParams bhParams;
     bhParams.position = glm::vec3(0,0,0);
@@ -98,12 +99,6 @@ int main() {
     }
 
     gSettings.maxSteps = bhParams.maxSteps;
-
-    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* w, int ww, int hh){
-        glViewport(0,0,ww,hh);
-        if (gCameraPtr) gCameraPtr->setAspect((float)ww/(float)hh);
-        (void)w;
-    });
 
     printControls();
 
@@ -132,14 +127,16 @@ int main() {
         glfwPollEvents();
         Input::processContinuous(window, camera, deltaTime);
 
-        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) gSettings.lensingEnabled = false;
-        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) gSettings.lensingEnabled = true;
-        if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) gSettings.diskEnabled = false;
-        if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) gSettings.diskEnabled = true;
-        if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) gSettings.dopplerEnabled = false;
-        if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) gSettings.dopplerEnabled = true;
-        if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) gSettings.redshiftEnabled = false;
-        if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) gSettings.redshiftEnabled = true;
+        if (!ImGui::GetIO().WantCaptureKeyboard) {
+            if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) gSettings.lensingEnabled = false;
+            if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) gSettings.lensingEnabled = true;
+            if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) gSettings.diskEnabled = false;
+            if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) gSettings.diskEnabled = true;
+            if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) gSettings.dopplerEnabled = false;
+            if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) gSettings.dopplerEnabled = true;
+            if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) gSettings.redshiftEnabled = false;
+            if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) gSettings.redshiftEnabled = true;
+        }
         static bool f2Prev=false, f3Prev=false;
         bool f2 = glfwGetKey(window, GLFW_KEY_F2)==GLFW_PRESS;
         if (f2 && !f2Prev) gSettings.starsEnabled = !gSettings.starsEnabled;
@@ -154,10 +151,6 @@ int main() {
         glfwGetFramebufferSize(window, &fbW, &fbH);
 
         blackHole.params().maxSteps = gSettings.maxSteps;
-
-        glViewport(0,0,fbW,fbH);
-        glClearColor(0.0f,0.0f,0.0f,1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
 
         renderer.setSize(fbW, fbH);
         renderer.render(camera, blackHole, totalTime, gSettings);
@@ -195,6 +188,11 @@ int main() {
             ImGui::Checkbox("Redshift", &gSettings.redshiftEnabled);
             ImGui::Separator();
             ImGui::SliderFloat("Render Scale", &gSettings.renderScale, 0.25f, 1.0f);
+            {
+                int sw = int(fbW * gSettings.renderScale);
+                int sh = int(fbH * gSettings.renderScale);
+                ImGui::Text("Effective: %dx%d %s", sw, sh, gSettings.renderScale < 0.999f ? "(FBO downscale)" : "(native)");
+            }
             ImGui::SliderFloat("Time Scale", &gSettings.timeScale, 0.0f, 2.0f);
             if (ImGui::Button("Reset Camera (R)")) camera.reset();
             ImGui::SameLine();

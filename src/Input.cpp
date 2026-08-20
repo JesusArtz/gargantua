@@ -1,4 +1,5 @@
 #include "Input.hpp"
+#include <imgui.h>
 #include <iostream>
 
 Camera* Input::camera = nullptr;
@@ -20,6 +21,7 @@ void Input::init(GLFWwindow* window, Camera& cam, InputState& s) {
 }
 
 void Input::processContinuous(GLFWwindow* window, Camera& cam, float deltaTime) {
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
     float vel = 5.0f * deltaTime;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) cam.setPosition(cam.position() + cam.front() * vel);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cam.setPosition(cam.position() - cam.front() * vel);
@@ -35,6 +37,12 @@ void Input::processContinuous(GLFWwindow* window, Camera& cam, float deltaTime) 
 
 void Input::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     (void)scancode; (void)mods;
+    // Dejar que ImGui consuma teclado cuando está activo (sliders, inputs)
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureKeyboard) {
+        // Permitir solo ESC/F11 para no bloquear salida/fullscreen
+        if (key != GLFW_KEY_ESCAPE && key != GLFW_KEY_F11) return;
+    }
     if (action != GLFW_PRESS) return;
     if (key == GLFW_KEY_ESCAPE) glfwSetWindowShouldClose(window, true);
     if (key == GLFW_KEY_F11) {
@@ -59,6 +67,7 @@ void Input::keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 
 void Input::mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     (void)window;
+    if (ImGui::GetIO().WantCaptureMouse) return;
     if (!camera) return;
     if (!mouseCaptured) return;
     if (firstMouse) { lastX = xpos; lastY = ypos; firstMouse = false; }
@@ -70,6 +79,7 @@ void Input::mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 
 void Input::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     (void)window; (void)xoffset;
+    if (ImGui::GetIO().WantCaptureMouse) return;
     if (camera) camera->processScroll((float)yoffset);
 }
 

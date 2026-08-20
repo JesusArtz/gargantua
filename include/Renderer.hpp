@@ -37,6 +37,8 @@ public:
 private:
     void createFullscreenQuad();
     void destroyFullscreenQuad() noexcept;
+    void ensureLowResFBO(int scaledW, int scaledH);
+    void destroyLowResFBO() noexcept;
 
     int width_;
     int height_;
@@ -44,4 +46,10 @@ private:
     unsigned int quadVBO_{0};
     Shader shader_;
     bool initialized_{false};
+
+    // Fase 16: FBO para renderScale < 1.0 (downscale + upscale)
+    unsigned int lowResFBO_{0};
+    unsigned int lowResColorTex_{0};
+    int lowResW_{0};
+    int lowResH_{0};
 };
