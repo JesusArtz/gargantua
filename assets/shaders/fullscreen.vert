@@ -1,4 +1,4 @@
-#version 430 core
+#version 410 core
 // Fullscreen triangle technique - no vertex attributes needed
 // Generates triangle covering entire NDC: (-1,-1), (3,-1), (-1,3)
 out vec2 vUV;
