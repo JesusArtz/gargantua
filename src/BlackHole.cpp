@@ -13,6 +13,10 @@ void BlackHole::validate() {
     if (params_.diskOuterRadius <= params_.diskInnerRadius)
         params_.diskOuterRadius = params_.diskInnerRadius + 2.0f;
     params_.photonSphereRadius = glm::max(params_.photonSphereRadius, params_.eventHorizonRadius * 1.3f);
+    params_.diskHeight = glm::clamp(params_.diskHeight, 0.01f, 2.0f);
+    params_.photonRingIntensity = glm::max(0.0f, params_.photonRingIntensity);
+    params_.planetRadius = glm::clamp(params_.planetRadius, 0.05f, 5.0f);
+    params_.planetOrbitRadius = glm::max(params_.diskInnerRadius + 1.0f, params_.planetOrbitRadius);
     if (glm::length(params_.diskNormal) < 0.001f) params_.diskNormal = glm::vec3(0,1,0);
     params_.diskNormal = glm::normalize(params_.diskNormal);
 }
@@ -46,19 +50,16 @@ float BlackHole::temperatureAtRadius(float radius, float innerRadius, float expo
     return std::pow(glm::clamp(r, 0.0f, 1.0f), exponent);
 }
 
+// Espejo exacto de temperatureToColor() en assets/shaders/blackhole.frag: los
+// tests de CPU solo valen si ambas rampas coinciden. Si cambia una, cambia la otra.
+// Paleta Interstellar: ambar profundo -> naranja -> blanco calido; nunca azul.
 glm::vec3 BlackHole::temperatureToColor(float temp) noexcept {
     temp = glm::clamp(temp, 0.0f, 1.0f);
-    if (temp < 0.25f) {
-        float t = temp / 0.25f;
-        return glm::mix(glm::vec3(0.12f, 0.02f, 0.02f), glm::vec3(0.8f, 0.12f, 0.02f), t);
-    } else if (temp < 0.5f) {
-        float t = (temp - 0.25f)/0.25f;
-        return glm::mix(glm::vec3(0.8f, 0.12f, 0.02f), glm::vec3(1.0f, 0.45f, 0.1f), t);
-    } else if (temp < 0.75f) {
-        float t = (temp - 0.5f)/0.25f;
-        return glm::mix(glm::vec3(1.0f, 0.45f, 0.1f), glm::vec3(1.0f, 0.85f, 0.4f), t);
-    } else {
-        float t = (temp - 0.75f)/0.25f;
-        return glm::mix(glm::vec3(1.0f, 0.85f, 0.4f), glm::vec3(1.0f, 1.0f, 0.95f), t);
-    }
+    const glm::vec3 c0(0.28f, 0.09f, 0.03f);
+    const glm::vec3 c1(0.95f, 0.38f, 0.09f);
+    const glm::vec3 c2(1.00f, 0.72f, 0.34f);
+    const glm::vec3 c3(1.00f, 0.95f, 0.85f);
+    if (temp < 0.33f) return glm::mix(c0, c1, temp / 0.33f);
+    if (temp < 0.70f) return glm::mix(c1, c2, (temp - 0.33f) / 0.37f);
+    return glm::mix(c2, c3, (temp - 0.70f) / 0.30f);
 }

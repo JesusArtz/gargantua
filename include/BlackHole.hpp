@@ -16,6 +16,12 @@ struct BlackHoleParams {
     float escapeRadius{30.0f};
     int   maxSteps{180};
     float baseStepSize{0.15f};
+    float diskHeight{0.22f};
+    float photonRingIntensity{2.2f};
+    bool  planetEnabled{true};
+    float planetRadius{0.42f};
+    float planetOrbitRadius{12.0f};
+    float planetOrbitSpeed{0.16f};
 };
 
 class BlackHole {

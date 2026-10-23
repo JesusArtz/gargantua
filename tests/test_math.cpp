@@ -59,6 +59,23 @@ void testTemperatureColor() {
     EXPECT_TRUE(cMid.r >= c0.r);
 }
 
+// La rampa de la pelicula tiene dos invariantes que la separan de un cuerpo negro
+// real: nunca vira a azul (el azul jamas domina al rojo) y el brillo crece de forma
+// monotona con la temperatura. Si alguien "corrige" la paleta hacia fisica real,
+// esto lo detecta antes de que cambie el look.
+void testDiskPaletteInvariants() {
+    std::cout << "== diskPaletteInvariants ==\n";
+    float prevLum = -1.0f;
+    for (int i = 0; i <= 20; ++i) {
+        float t = float(i) / 20.0f;
+        glm::vec3 c = BlackHole::temperatureToColor(t);
+        EXPECT_TRUE(c.b <= c.r + 1e-4f);
+        float lum = 0.2126f*c.r + 0.7152f*c.g + 0.0722f*c.b;
+        EXPECT_TRUE(lum >= prevLum - 1e-4f);
+        prevLum = lum;
+    }
+}
+
 void testBlackHoleValidation() {
     std::cout << "== blackHoleValidation ==\n";
     BlackHoleParams p;
@@ -66,10 +83,16 @@ void testBlackHoleValidation() {
     p.photonSphereRadius = 1.0f;
     p.diskInnerRadius = 1.0f;
     p.diskOuterRadius = 0.5f;
+    p.diskHeight = 0.0f;
+    p.planetRadius = 0.01f;
+    p.planetOrbitRadius = 1.0f;
     BlackHole bh(p);
     EXPECT_TRUE(bh.params().photonSphereRadius >= bh.params().eventHorizonRadius * 1.3f - 1e-4);
     EXPECT_TRUE(bh.params().diskInnerRadius >= bh.params().eventHorizonRadius);
     EXPECT_TRUE(bh.params().diskOuterRadius > bh.params().diskInnerRadius);
+    EXPECT_TRUE(bh.params().diskHeight >= 0.01f);
+    EXPECT_TRUE(bh.params().planetRadius >= 0.05f);
+    EXPECT_TRUE(bh.params().planetOrbitRadius >= bh.params().diskInnerRadius + 1.0f - 1e-4);
 }
 
 void testCameraVectors() {
@@ -117,6 +140,7 @@ int main() {
     testRayPlane();
     testTemperature();
     testTemperatureColor();
+    testDiskPaletteInvariants();
     testBlackHoleValidation();
     testCameraVectors();
     testCameraMatrices();
